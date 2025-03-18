@@ -4,13 +4,11 @@ import {
   Post,
   Body,
   Param,
-  Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateMessageDto } from '../dto/create-message.dto';
 import { MessagesService } from '../service/messages.service';
 
-@Injectable()
 @Controller('messages')
 export class MessagesController {
   constructor(private readonly service: MessagesService) {}

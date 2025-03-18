@@ -1,6 +1,4 @@
-import { IsString } from "class-validator";
-
-IsString
+import { IsString } from 'class-validator';
 
 export class CreateMessageDto {
   @IsString()
