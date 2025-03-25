@@ -1,0 +1,30 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { scrypt as _scrypt, randomBytes } from 'node:crypto';
+import { promisify } from 'node:util';
+
+const scrypt = promisify(_scrypt);
+
+@Injectable()
+export class AuthService {
+  constructor(private readonly usersService: UsersService) {}
+
+  async signUp(email: string, password: string) {
+    const users = await this.usersService.find(email);
+    if (users.length) {
+      throw new BadRequestException('User already exists');
+    }
+
+    const salt = randomBytes(8).toString('hex');
+
+    const hash = (await scrypt(password, salt, 32)) as Buffer;
+
+    const result = salt + '.' + hash.toString('hex');
+
+    const user = await this.usersService.create(email, result);
+
+    return user;
+  }
+
+  signIn() {}
+}
