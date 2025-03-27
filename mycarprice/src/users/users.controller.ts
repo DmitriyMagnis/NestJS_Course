@@ -8,6 +8,8 @@ import {
   Query,
   Delete,
   NotFoundException,
+  Session,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
@@ -15,6 +17,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { UserDto } from './dto/user.dto';
 import { AuthService } from './auth.service';
+import { CurrentUserDecorator } from './decorators/current-user.decorator';
+import { User } from './user.entity';
+import { AuthGuard } from '../guards/auth.guard';
 
 @Controller('auth')
 @Serialize(UserDto)
@@ -24,15 +29,48 @@ export class UsersController {
     private readonly usersService: UsersService,
   ) {}
 
+  @Get('/colors/:color')
+  setColor(@Param('color') color: string, @Session() session) {
+    session.color = color;
+  }
+
+  @Get('/colors')
+  getColor(@Session() session: any) {
+    return session.color;
+  }
+
+  // @Get('/whoami')
+  // whoami(@Session() session: any) {
+  //   return this.usersService.findOne(session.userId);
+  // }
+  @Get('/whoami')
+  @UseGuards(AuthGuard)
+  whoami(@CurrentUserDecorator() user: User) {
+    return user;
+  }
+
+  @Post('/signout')
+  signout(@Session() session: any) {
+    session.userId = null;
+  }
+
   @Post('signup')
-  createUser(@Body() body: CreateUserDto) {
-    return this.authService.signUp(body.email, body.password);
+  async createUser(@Body() body: CreateUserDto, @Session() session: any) {
+    const user = await this.authService.signUp(body.email, body.password);
+    session.userId = user.id;
+    return user;
+  }
+
+  @Post('signin')
+  async signin(@Body() body: CreateUserDto, @Session() session: any) {
+    const user = await this.authService.signIn(body.email, body.password);
+    session.userId = user.id;
+    return user;
   }
 
   @Get('/:id')
   async findUser(@Param('id') id: string) {
     const user = await this.usersService.findOne(parseInt(id));
-
     if (!user) {
       throw new NotFoundException('User not found. Id: ' + id);
     }
