@@ -9,6 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
 import { Report } from './reports/report.entity';
 import * as process from 'node:process';
+import * as morgan from 'morgan';
 
 const cookieSession = require('cookie-session');
 
@@ -29,12 +30,6 @@ const cookieSession = require('cookie-session');
     }),
     ReportsModule,
     UsersModule,
-    // TypeOrmModule.forRoot({
-    //   type: 'sqlite',
-    //   database: 'db.sqlite',
-    //   entities: [User, Report],
-    //   synchronize: true,
-    // }),
   ],
   controllers: [AppController],
   providers: [
@@ -47,12 +42,14 @@ const cookieSession = require('cookie-session');
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(
-        cookieSession({
-          keys: ['secret'],
-        }),
-      )
-      .forRoutes('*');
+    const middlewares = [
+      cookieSession({
+        keys: ['secret'],
+      }),
+    ];
+
+    if (process.env.NODE_ENV === 'development') middlewares.push(morgan('dev'));
+
+    consumer.apply(...middlewares).forRoutes('*');
   }
 }
